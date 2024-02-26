@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Feedback Forum</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gradient-to-r from-gray-800 to-gray-900 text-white min-h-screen p-6">
+
+    <section class="mb-8">
+        <h2 class="text-2xl mb-4">Student Feedback</h2>
+        <div id="studentFeedbackList" class="mb-4"></div>
+        <form id="studentFeedbackForm" class="flex items-center space-x-4">
+            <input type="text" id="studentUsername" placeholder="Username" required class="rounded-md p-2 text-black">
+            <input type="text" id="studentMessage" placeholder="Message" required class="rounded-md p-2 text-black">
+            <input type="hidden" id="studentType" value="Student">
+            <button type="submit" class="bg-blue-500 text-white rounded-md p-2">Submit Student Feedback</button>
+        </form>
+    </section>
+
+    <section class="mb-8">
+        <h2 class="text-2xl mb-4">Teacher Feedback</h2>
+        <div id="teacherFeedbackList" class="mb-4"></div>
+        <form id="teacherFeedbackForm" class="flex items-center space-x-4">
+            <input type="text" id="teacherUsername" placeholder="Username" required class="rounded-md p-2 text-black">
+            <input type="text" id="teacherMessage" placeholder="Message" required class="rounded-md p-2 text-black">
+            <input type="hidden" id="teacherType" value="Teacher">
+            <button type="submit" class="bg-green-500 text-white rounded-md p-2">Submit Teacher Feedback</button>
+        </form>
+    </section>
+
+    <section>
+        <h2 class="text-2xl mb-4">Admin Feedback</h2>
+        <div id="adminFeedbackList"></div>
+    </section>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const studentFeedbackList = document.getElementById("studentFeedbackList");
+            const teacherFeedbackList = document.getElementById("teacherFeedbackList");
+            const adminFeedbackList = document.getElementById("adminFeedbackList");
+
+            const studentFeedbackForm = document.getElementById("studentFeedbackForm");
+            const teacherFeedbackForm = document.getElementById("teacherFeedbackForm");
+
+            function fetchFeedback(url, feedbackList) {
+                fetch(url)
+                    .then(response => response.json())
+                    .then(data => {
+                        feedbackList.innerHTML = "";
+                        data.forEach(feedback => {
+                            const feedbackItem = document.createElement("div");
+                            feedbackItem.innerHTML = `<strong>${feedback.username}</strong> (${feedback.type}): ${feedback.message}`;
+                            feedbackList.appendChild(feedbackItem);
+                        });
+                    })
+                    .catch(error => console.error("Error fetching feedback:", error));
+            }
+
+            function submitFeedback(event, url, feedbackList, usernameId, messageId, typeId) {
+                event.preventDefault();
+
+                const username = document.getElementById(usernameId).value;
+                const message = document.getElementById(messageId).value;
+                const type = document.getElementById(typeId).value;
+
+                const feedbackData = {
+                    username,
+                    message,
+                    type
+                };
+
+                fetch(url, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(feedbackData)
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log("Feedback submitted successfully:", data);
+
+                        // Only fetch admin feedback after submission
+                        fetchFeedback("http://localhost:8080/api/feedback/all", adminFeedbackList);
+                    })
+                    .catch(error => console.error("Error submitting feedback:", error));
+            }
+
+            studentFeedbackForm.addEventListener("submit", function (event) {
+                submitFeedback(event, "http://localhost:8080/api/feedback/students", adminFeedbackList, "studentUsername", "studentMessage", "studentType");
+            });
+
+            teacherFeedbackForm.addEventListener("submit", function (event) {
+                submitFeedback(event, "http://localhost:8080/api/feedback/teachers", adminFeedbackList, "teacherUsername", "teacherMessage", "teacherType");
+            });
+
+            // Fetch initial feedback for students, teachers, and admin
+            fetchFeedback("http://localhost:8080/api/feedback/students", studentFeedbackList);
+            fetchFeedback("http://localhost:8080/api/feedback/teachers", teacherFeedbackList);
+            fetchFeedback("http://localhost:8080/api/feedback/all", adminFeedbackList);
+        });
+    </script>
+</body>
+</html>
